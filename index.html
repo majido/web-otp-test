@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simple Test Page for WebOTP</title>
+    <!-- based on ideas from: https://web-otp-demo.glitch.me/-->
 </head>
 
 <style>
@@ -12,10 +13,10 @@
         margin: 0;
         padding: 5px;
     }
+
     body {
         display: flex;
         flex-direction: column;
-        height: 100vh;
         justify-content: space-evenly;
     }
 
@@ -34,6 +35,8 @@
     </div>
     <div>
         <button id="copy">Copy SMS</button>
+        <button id="copy-log">Copy Log</button>
+
         <input id="otp-input" type="number" is="one-time-code" 
             autocomplete="one-time-code" pattern="^([0-9]+)$" />
 
@@ -46,8 +49,8 @@
 
 <script>
 
-    const [copyBtn, otpInput, logEl, message] =
-        ['copy', 'otp-input', 'log', 'message'].map(id => document.querySelector(`#${id}`))
+    const [copyBtn, copyLogBtn, otpInput, logEl, message] =
+        ['copy', 'copy-log', 'otp-input', 'log', 'message'].map(id => document.querySelector(`#${id}`))
 
     // `input[autocomplete="one-time-codep"]` polyfill
     // https://gist.github.com/agektmr/67dce7e9db26c48b5ddc6811fb95d02d
@@ -67,26 +70,28 @@
     message.innerText = `Your OTP is: 123456.\n\n@${window.location.host} #123456`;
 
 
-    copyBtn.addEventListener('click', copy);
+    copyBtn.addEventListener('click', e => {
+        e.preventDefault();
+        copy(message);
+    });
+    copyLogBtn.addEventListener('click', e => {
+        e.preventDefault();
+        copy(logEl);
+    });
+
     otpInput.addEventListener('autocomplete', received);
 
-    async function copy(e) {
-        e.preventDefault();
+    function copy(node) {
         const range = document.createRange();
-        range.selectNode(message);
+        range.selectNode(node);
         window.getSelection().removeAllRanges();
         window.getSelection().addRange(range);
         document.execCommand('copy');
-        log('Message copied.');
     }
 
 
     async function received(e) {
-        if (!otpForm.checkValidity()) {
-            err('Invalid one time code.');
-        } else {
-            log('OTP auto-filled!')
-        }
+        log('otp auto-filled!')
     }
 
     function registerCustomElement() {
@@ -109,6 +114,7 @@
                         const content = await navigator.credentials.get({
                             otp: { transport: ['sms'] }, signal: this.abortController.signal
                         });
+                        log("received.")
                         this.value = content.code;
                         this.dispatchEvent(new Event('autocomplete'));
                     } catch (e) {
